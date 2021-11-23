@@ -1,3 +1,8 @@
+############################################################################################
+####                                PROJET IA 41 ROBOT
+###                             Samuel Bernard - Thomas Peyron
+############################################################################################
+
 import random
 
 #Plateau contient les cases du plateau.
@@ -84,6 +89,21 @@ def init_plateau():
     plateau[0][random.randint(7, 14)][2]=1
     plateau[15][random.randint(0, 6)][2]=1
     plateau[15][random.randint(7, 14)][2]=1
+
+    #4 Angle par quart de tableau chaque angle ne doit pas toucher une autre parois
+    for h_middle in range(2):
+        for v_middle in range(2):
+            for i in range(2):
+                x=random.randint(1, 6)+6*(h_middle)
+                y=random.randint(1, 6)+6*(v_middle)
+                plateau[x][y][3]=1
+                plateau[x][y][2]=1
+            for i in range(2):
+                x=random.randint(1, 6)+6*(h_middle)
+                y=random.randint(1, 6)+6*(v_middle)
+                plateau[x][y][4]=1
+                plateau[x][y][5]=1
+
     return plateau
 
 
