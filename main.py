@@ -11,6 +11,14 @@ import random
 plateau = []
 
 
+#Declaration des 4 pions, chacun comprenant une abcisse et une ordonnée
+#Chaque pion est un tableau comprenant une valeur d'abcisse et d'ordonnée
+bleu = []
+jaune = []
+vert = []
+rouge = []
+
+
 
 def display_plateau(plateau):
     #affichage du mur haut
@@ -46,6 +54,9 @@ def display_plateau(plateau):
         print(line_down)
 
 def init_plateau():
+    
+    global bleu, jaune, vert, rouge
+    
     plateau=[]
     for y in range(16):
         line_array=[]
@@ -104,13 +115,149 @@ def init_plateau():
                 plateau[x][y][4]=1
                 plateau[x][y][5]=1
 
+    #Type des cases dont les coordonnées sont celles des pions correspond :
+    #1 : bleu
+    #2 : jaune etc.
+    plateau[bleu[0]][bleu[1]][1] = 1
+    plateau[jaune[0]][jaune[1]][1] = 2
+    plateau[vert[0]][vert[1]][1] = 3
+    plateau[rouge[0]][rouge[1]][1] = 4
+    
+    
     return plateau
 
 
+def update_plateau():
+    
+    global plateau
+    global bleu, jaune, vert, rouge
+    
+    plateau[bleu[0]][bleu[1]][1] = 1
+    plateau[jaune[0]][jaune[1]][1] = 2
+    plateau[vert[0]][vert[1]][1] = 3
+    plateau[rouge[0]][rouge[1]][1] = 4
+    
+
+#Initialisation des deux coordonnées d'un pion
+def init_pion():
+    pion = []
+    
+    #Génération de deux entiers aléatoires différents de 7 et 8
+    #Une case avec l'une de ses coordonnées à 7 ou 8 est une des cases bloquées
+    #au centre du plateau
+    condition = True
+    while condition == True:
+        y = random.randint(0,15)
+        x = random.randint(0,15)
+        if(x!=7 and x!=8 and y!=7 and y!=8):
+            condition = False
+            
+    #Ordonnée : coordonnée y comprise dans les cases du plateau
+    #Abcisse : coordonnée x comprise dans les cases du plateau
+    pion = [y,x]
+    return pion
 
 
 
-plateau=init_plateau()
+def isEmpty(p_case):
+    global plateau
+    verif = True
+    if(plateau[p_case[0]][p_case[1]][1] >= 1 and plateau[p_case[0]][p_case[1]][1] <= 4):
+        verif = False
+    return verif
+
+
+def moveLeft(p_pion):
+    
+    global plateau
+    nextPion = [p_pion[0],p_pion[1]]
+    
+    while plateau[nextPion[0]][nextPion[1]][4] != 1 and plateau[nextPion[0]][nextPion[1]-1][2] != 1 and isEmpty([nextPion[0],nextPion[1]-1]):
+        nextPion[1]-=1
+    
+    print(nextPion)
+    return nextPion
+  
+
+def moveRight(p_pion):
+    
+    global plateau
+    nextPion = [p_pion[0],p_pion[1]]
+    
+    while plateau[nextPion[0]][nextPion[1]][2] != 1 and plateau[nextPion[0]][nextPion[1]+1][4] != 1 and isEmpty([nextPion[0],nextPion[1]+1]):
+        nextPion[1]+=1
+    
+    print(nextPion)
+    return nextPion
+
+
+def moveUp(p_pion):
+    
+    global plateau
+    nextPion = [p_pion[0],p_pion[1]]
+    
+    while plateau[nextPion[0]][nextPion[1]][5] != 1 and plateau[nextPion[0]-1][nextPion[1]][3] != 1 and isEmpty([nextPion[0]-1,nextPion[1]]):
+        nextPion[0]-=1
+    
+    print(nextPion)
+    return nextPion
+
+
+def moveDown(p_pion):
+    
+    global plateau
+    nextPion = [p_pion[0],p_pion[1]]
+    
+    while plateau[nextPion[0]][nextPion[1]][3] != 1 and plateau[nextPion[0]+1][nextPion[1]][5] != 1 and isEmpty([nextPion[0]+1,nextPion[1]]):
+        nextPion[0]+=1
+    
+    print(nextPion)
+    return nextPion
+
+
+def nextPositions(p_pion):
+    
+    return [moveLeft(p_pion),moveRight(p_pion),moveUp(p_pion),moveDown(p_pion)]
+
+
+def move(p_pion):
+    
+    plateau[p_pion[0]][p_pion[1]][1] = 0
+    p_pion = moveLeft(p_pion)
+    plateau[p_pion[0]][p_pion[1]][1] = 1
+    return p_pion
+
+
+#Initialisation des coordonnées des 4 pions
+#les 4 pions possèdent des coordonnées initiales différentes 
+condition = True
+while condition == True:
+    bleu = init_pion()
+    jaune = init_pion()
+    vert = init_pion()
+    rouge = init_pion()
+    if(not(bleu == jaune == vert == rouge)):
+        condition = False
+        
+plateau = init_plateau()
+        
+print(bleu)
+print(vert)
+print(jaune)
+print(rouge)
+
+    
 display_plateau(plateau)
+bleu = move(bleu)
+update_plateau()
+print("\n")
+display_plateau(plateau)
+
+
+#choix quelle direction
+#déclaration cible = deux coordonnées si égal win
+#compte nombre de coups / déplacement = nombre appel fonction
+#algo recherche
+#interface graphique
 
 
