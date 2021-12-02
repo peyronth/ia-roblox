@@ -7,7 +7,7 @@ import random
 
 #Plateau contient les cases du plateau.
 #Les cases sont un tableau de type [id case, couleur case, mur droit, mur bas, mur gauche, mur haut]
-#Avec couleur case 0=>Aucune 1=>Bleu 2=>Jaune 3=>Vert 4=>Rouge 5=>Blocked
+#Avec couleur case 0=>Aucune 1=>Bleu 2=>Jaune 3=>Vert 4=>Rouge 5=>Blocked 6=>Objectif
 plateau = []
 
 
@@ -23,7 +23,7 @@ rouge = []
 cible = []
 
 
-
+#Afficher le plateau sur la console
 def display_plateau():
     
     global plateau, cible
@@ -42,7 +42,7 @@ def display_plateau():
             elif(plateau[y][x][1]==2):type=" J "
             elif(plateau[y][x][1]==3):type=" V "
             elif(plateau[y][x][1]==4):type=" R "
-            elif(y== cible[0] and x==cible[1]):type=" O "
+            elif(plateau[y][x][1]==6):type=" O "
 
             #Présence de murs latéraux
             if(x==0):                                                                                               #colonne bord gauche
@@ -61,6 +61,7 @@ def display_plateau():
         print(line)
         print(line_down)
 
+#Initialiser le plateau au départ du jeu
 def init_plateau():
     
     global bleu, jaune, vert, rouge, cible
@@ -109,19 +110,32 @@ def init_plateau():
     plateau[15][random.randint(0, 6)][2]=1
     plateau[15][random.randint(7, 14)][2]=1
 
+    #On détermine la position de la cible dans un de ces angles
+    idx_cible=random.randint(0, 15)
+    print(idx_cible)
+    idx=0
+
     #4 Angle par quart de tableau chaque angle ne doit pas toucher une autre parois
     for h_middle in range(2):
         for v_middle in range(2):
             for i in range(2):
                 x=random.randint(1, 6)+6*(h_middle)
                 y=random.randint(1, 6)+6*(v_middle)
-                plateau[x][y][3]=1
-                plateau[x][y][2]=1
-            for i in range(2):
+                plateau[y][x][3]=1
+                plateau[y][x][2]=1
+                idx+=1
+                if(idx==idx_cible):
+                    cible=[x,y]
+            for i in range(2,4):
                 x=random.randint(1, 6)+6*(h_middle)
                 y=random.randint(1, 6)+6*(v_middle)
-                plateau[x][y][4]=1
-                plateau[x][y][5]=1
+                plateau[y][x][4]=1
+                plateau[y][x][5]=1
+                idx+=1
+                if(idx==idx_cible):
+                    cible=[x,y]
+
+    plateau[cible[1]][cible[0]][1]=6
 
     #Type des cases dont les coordonnées sont celles des pions correspond :
     #1 : bleu
@@ -131,8 +145,8 @@ def init_plateau():
     plateau[vert[0]][vert[1]][1] = 3
     plateau[rouge[0]][rouge[1]][1] = 4
     
+    print(cible)
     return plateau
-
 
 #Mise à jour du plateau lorsqu'un ou plusieurs pions ont été déplacés
 def update_plateau():
@@ -145,8 +159,8 @@ def update_plateau():
     plateau[jaune[0]][jaune[1]][1] = 2
     plateau[vert[0]][vert[1]][1] = 3
     plateau[rouge[0]][rouge[1]][1] = 4
+    plateau[cible[0]][cible[1]][1] = 4
     
-
 #Initialisation des deux coordonnées d'un pion
 def init_pion():
     pion = []
@@ -165,7 +179,6 @@ def init_pion():
     #Abcisse : coordonnée x comprise dans les cases du plateau
     pion = [y,x]
     return pion
-
 
 #Supprimer et vérifie si le type de la case est carré vide uniquement
 def isEmpty(p_case):
@@ -252,16 +265,17 @@ while condition == True:
     jaune = init_pion()
     vert = init_pion()
     rouge = init_pion()
-    cible = init_pion()
-    if(not(bleu == jaune == vert == rouge == cible)):
+    #cible = init_pion()
+    if(bleu != jaune != vert != rouge != cible):
         condition = False
 
 #Ajout d'un troisième élément à la liste correspondant à la cible
 #identifie la couleur du pion devant atteindre la cible
-cible.append(random.randint(1,4))
-        
+
+     
 plateau = init_plateau()
-        
+cible.append(random.randint(1,4)) 
+
 print(bleu)
 print(vert)
 print(jaune)
