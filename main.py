@@ -7,20 +7,27 @@ import random
 
 #Plateau contient les cases du plateau.
 #Les cases sont un tableau de type [id case, couleur case, mur droit, mur bas, mur gauche, mur haut]
-#Avec couleur case 0=>Aucune 1=>Bleu 2=>JAune 3=>Vert 4=>Rouge 5=>Blocked
+#Avec couleur case 0=>Aucune 1=>Bleu 2=>Jaune 3=>Vert 4=>Rouge 5=>Blocked
 plateau = []
 
 
 #Declaration des 4 pions, chacun comprenant une abcisse et une ordonnée
-#Chaque pion est un tableau comprenant une valeur d'abcisse et d'ordonnée
+#Chaque pion est une liste comprenant une valeur d'abcisse et d'ordonnée
 bleu = []
 jaune = []
 vert = []
 rouge = []
 
+#Declaration de la cible
+#Liste comprenant deux coordonées de position et un chiffre déterminant la couleur du pion devant atteindre la cible
+cible = []
 
 
-def display_plateau(plateau):
+
+def display_plateau():
+    
+    global plateau, cible
+    
     #affichage du mur haut
     print("  _   _   _   _   _   _   _   _   _   _   _   _   _   _   _   _")
     for y in range(16):
@@ -35,6 +42,7 @@ def display_plateau(plateau):
             elif(plateau[y][x][1]==2):type=" J "
             elif(plateau[y][x][1]==3):type=" V "
             elif(plateau[y][x][1]==4):type=" R "
+            elif(y== cible[0] and x==cible[1]):type=" O "
 
             #Présence de murs latéraux
             if(x==0):                                                                                               #colonne bord gauche
@@ -55,7 +63,7 @@ def display_plateau(plateau):
 
 def init_plateau():
     
-    global bleu, jaune, vert, rouge
+    global bleu, jaune, vert, rouge, cible
     
     plateau=[]
     for y in range(16):
@@ -123,15 +131,16 @@ def init_plateau():
     plateau[vert[0]][vert[1]][1] = 3
     plateau[rouge[0]][rouge[1]][1] = 4
     
-    
     return plateau
 
 
+#Mise à jour du plateau lorsqu'un ou plusieurs pions ont été déplacés
 def update_plateau():
     
     global plateau
     global bleu, jaune, vert, rouge
     
+    #Le type de la case du plateau dépend de la présence d'un pion et de sa couleur
     plateau[bleu[0]][bleu[1]][1] = 1
     plateau[jaune[0]][jaune[1]][1] = 2
     plateau[vert[0]][vert[1]][1] = 3
@@ -158,13 +167,10 @@ def init_pion():
     return pion
 
 
-
+#Supprimer et vérifie si le type de la case est carré vide uniquement
 def isEmpty(p_case):
     global plateau
-    verif = True
-    if(plateau[p_case[0]][p_case[1]][1] >= 1 and plateau[p_case[0]][p_case[1]][1] <= 4):
-        verif = False
-    return verif
+    return(plateau[p_case[0]][p_case[1]][1] >= 1 and plateau[p_case[0]][p_case[1]][1] <= 4)
 
 
 def moveLeft(p_pion):
@@ -215,6 +221,7 @@ def moveDown(p_pion):
     return nextPion
 
 
+#Définit et retourne la liste des 4 positions possibles du pion s'il se dirige à gauche, à droite, en haut ou en bas
 def nextPositions(p_pion):
     
     return [moveLeft(p_pion),moveRight(p_pion),moveUp(p_pion),moveDown(p_pion)]
@@ -228,16 +235,30 @@ def move(p_pion):
     return p_pion
 
 
-#Initialisation des coordonnées des 4 pions
-#les 4 pions possèdent des coordonnées initiales différentes 
+def isWin(p_pion):
+    
+    global cible, plateau
+    return (cible[0]==p_pion[0] and cible[1]==p_pion[1] and cible[2]==plateau[p_pion[0]][p_pion[1]][1])
+
+
+#******************************************************************************************************
+
+
+#Initialisation des coordonnées des 4 pions et de la cible
+#les 4 pions et la cible possèdent des coordonnées initiales différentes 
 condition = True
 while condition == True:
     bleu = init_pion()
     jaune = init_pion()
     vert = init_pion()
     rouge = init_pion()
-    if(not(bleu == jaune == vert == rouge)):
+    cible = init_pion()
+    if(not(bleu == jaune == vert == rouge == cible)):
         condition = False
+
+#Ajout d'un troisième élément à la liste correspondant à la cible
+#identifie la couleur du pion devant atteindre la cible
+cible.append(random.randint(1,4))
         
 plateau = init_plateau()
         
@@ -245,17 +266,15 @@ print(bleu)
 print(vert)
 print(jaune)
 print(rouge)
-
+print(cible)
     
-display_plateau(plateau)
-bleu = move(bleu)
+display_plateau()
 update_plateau()
 print("\n")
-display_plateau(plateau)
+display_plateau()
 
 
 #choix quelle direction
-#déclaration cible = deux coordonnées si égal win
 #compte nombre de coups / déplacement = nombre appel fonction
 #algo recherche
 #interface graphique
