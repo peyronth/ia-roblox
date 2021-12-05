@@ -112,7 +112,6 @@ def init_plateau():
 
     #On détermine la position de la cible dans un de ces angles
     idx_cible=random.randint(0, 15)
-    print(idx_cible)
     idx=0
 
     #4 Angle par quart de tableau chaque angle ne doit pas toucher une autre parois
@@ -145,7 +144,6 @@ def init_plateau():
     plateau[vert[0]][vert[1]][1] = 3
     plateau[rouge[0]][rouge[1]][1] = 4
     
-    print(cible)
     return plateau
 
 #Mise à jour du plateau lorsqu'un ou plusieurs pions ont été déplacés
@@ -194,7 +192,6 @@ def moveLeft(p_pion):
     while plateau[nextPion[0]][nextPion[1]][4] != 1 and plateau[nextPion[0]][nextPion[1]-1][2] != 1 and isEmpty([nextPion[0],nextPion[1]-1]):
         nextPion[1]-=1
     
-    print(nextPion)
     return nextPion
   
 
@@ -206,7 +203,6 @@ def moveRight(p_pion):
     while plateau[nextPion[0]][nextPion[1]][2] != 1 and plateau[nextPion[0]][nextPion[1]+1][4] != 1 and isEmpty([nextPion[0],nextPion[1]+1]):
         nextPion[1]+=1
     
-    print(nextPion)
     return nextPion
 
 
@@ -218,7 +214,6 @@ def moveUp(p_pion):
     while plateau[nextPion[0]][nextPion[1]][5] != 1 and plateau[nextPion[0]-1][nextPion[1]][3] != 1 and isEmpty([nextPion[0]-1,nextPion[1]]):
         nextPion[0]-=1
     
-    print(nextPion)
     return nextPion
 
 
@@ -229,8 +224,6 @@ def moveDown(p_pion):
     
     while plateau[nextPion[0]][nextPion[1]][3] != 1 and plateau[nextPion[0]+1][nextPion[1]][5] != 1 and isEmpty([nextPion[0]+1,nextPion[1]]):
         nextPion[0]+=1
-    
-    print(nextPion)
     return nextPion
 
 
@@ -241,21 +234,23 @@ def nextPositions(p_pion):
 
 
 def move(p_pion):
-    
+
     plateau[p_pion[0]][p_pion[1]][1] = 0
     p_pion = moveLeft(p_pion)
     plateau[p_pion[0]][p_pion[1]][1] = 1
     return p_pion
 
 
-def isWin(p_pion):
+def isWin(plateau):
     
-    global cible, plateau
-    return (cible[0]==p_pion[0] and cible[1]==p_pion[1] and cible[2]==plateau[p_pion[0]][p_pion[1]][1])
+    global cible
+    return (cible[2]==plateau[cible[0]][cible[1]][1])
+
+
+
 
 
 #******************************************************************************************************
-
 
 #Initialisation des coordonnées des 4 pions et de la cible
 #les 4 pions et la cible possèdent des coordonnées initiales différentes 
@@ -272,19 +267,11 @@ while condition == True:
 #Ajout d'un troisième élément à la liste correspondant à la cible
 #identifie la couleur du pion devant atteindre la cible
 
-     
+#Initialisation du plateau
 plateau = init_plateau()
+#choix de la couleur qui doit aller sur la cible
 cible.append(random.randint(1,4)) 
-
-print(bleu)
-print(vert)
-print(jaune)
-print(rouge)
-print(cible)
-    
-display_plateau()
-update_plateau()
-print("\n")
+#Affichage du plateau
 display_plateau()
 
 
