@@ -181,7 +181,7 @@ def init_pion():
 #Supprimer et vérifie si le type de la case est carré vide uniquement
 def isEmpty(p_case):
     global plateau
-    return(plateau[p_case[0]][p_case[1]][1] >= 1 and plateau[p_case[0]][p_case[1]][1] <= 4)
+    return(plateau[p_case[0]][p_case[1]][1] == 0 or plateau[p_case[0]][p_case[1]][1] == 6)
 
 
 def moveLeft(p_pion):
@@ -229,8 +229,17 @@ def moveDown(p_pion):
 
 #Définit et retourne la liste des 4 positions possibles du pion s'il se dirige à gauche, à droite, en haut ou en bas
 def nextPositions(p_pion):
-    
-    return [moveLeft(p_pion),moveRight(p_pion),moveUp(p_pion),moveDown(p_pion)]
+    a_p_next=[]
+    if(moveLeft(p_pion)!=p_pion):
+        a_p_next.append(moveLeft(p_pion))
+    if(moveRight(p_pion)!=p_pion):
+        a_p_next.append(moveRight(p_pion))
+    if(moveDown(p_pion)!=p_pion):
+        a_p_next.append(moveDown(p_pion))
+    if(moveUp(p_pion)!=p_pion):
+        a_p_next.append(moveUp(p_pion))
+    return a_p_next
+
 
 
 def move(p_pion):
@@ -247,7 +256,11 @@ def isWin(plateau):
     return (cible[2]==plateau[cible[0]][cible[1]][1])
 
 
+#******************************************************************************************************
+#Construit un état fictif du jeu
+def construct_state(bleu,jaune,vert,rouge,heur=0):
 
+    return [bleu,jaune,vert,rouge,heur]
 
 
 #******************************************************************************************************
@@ -273,7 +286,6 @@ plateau = init_plateau()
 cible.append(random.randint(1,4)) 
 #Affichage du plateau
 display_plateau()
-
 
 #choix quelle direction
 #compte nombre de coups / déplacement = nombre appel fonction
