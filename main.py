@@ -124,7 +124,7 @@ def init_plateau():
                 plateau[y][x][2]=1
                 idx+=1
                 if(idx==idx_cible):
-                    cible=[x,y]
+                    cible=[y,x]
             for i in range(2,4):
                 x=random.randint(1, 6)+6*(h_middle)
                 y=random.randint(1, 6)+6*(v_middle)
@@ -132,9 +132,9 @@ def init_plateau():
                 plateau[y][x][5]=1
                 idx+=1
                 if(idx==idx_cible):
-                    cible=[x,y]
+                    cible=[y,x]
 
-    plateau[cible[1]][cible[0]][1]=6
+    plateau[cible[0]][cible[1]][1]=6
 
     #Type des cases dont les coordonnées sont celles des pions correspond :
     #1 : bleu
@@ -152,12 +152,39 @@ def update_plateau(bleu, jaune, vert, rouge, plateau):
     #on place la cible
     plateau[cible[0]][cible[1]][1] = 6
     
-    #Le type de la case du plateau dépend de la présence d'un pion et de sa couleur
-    plateau[bleu[0]][bleu[1]][1] = 1
-    plateau[jaune[0]][jaune[1]][1] = 2
-    plateau[vert[0]][vert[1]][1] = 3
-    plateau[rouge[0]][rouge[1]][1] = 4
-    
+    #On change la couleur de la case si le robot à bougé
+    if(not plateau[bleu[0]][bleu[1]][1] == 1):
+        #on enleve l'ancienne case de cette couleur
+        for ligne in plateau:
+            for case in ligne:
+                if(case[1]==1):
+                    case[1]=0
+        #on met la bonne case dans la couleur
+        plateau[bleu[0]][bleu[1]][1] = 1
+    if(not plateau[jaune[0]][jaune[1]][1] == 2):
+        #on enleve l'ancienne case de cette couleur
+        for ligne in plateau:
+            for case in ligne:
+                if(case[1]==2):
+                    case[1]=0
+        #on met la bonne case dans la couleur
+        plateau[jaune[0]][jaune[1]][1] = 2
+    if(not plateau[vert[0]][vert[1]][1] == 3):
+        #on enleve l'ancienne case de cette couleur
+        for ligne in plateau:
+            for case in ligne:
+                if(case[1]==3):
+                    case[1]=0
+        #on met la bonne case dans la couleur
+        plateau[vert[0]][vert[1]][1] = 3 
+    if(not plateau[rouge[0]][rouge[1]][1] == 4):
+        #on enleve l'ancienne case de cette couleur
+        for ligne in plateau:
+            for case in ligne:
+                if(case[1]==4):
+                    case[1]=0
+        #on met la bonne case dans la couleur
+        plateau[rouge[0]][rouge[1]][1] = 4              
 
     return plateau
     
@@ -250,9 +277,9 @@ def move(p_pion):
 def isWin(plateau):
     global cible
     if(cible[2]==plateau[cible[0]][cible[1]][1]):
-        display_plateau(plateau)
-        print(plateau[cible[0]][cible[1]][1])
-        print(cible)
+        #display_plateau(plateau)
+        #print(plateau[cible[0]][cible[1]][1])
+        #print(cible)
         return 1
     else:
         return 0
@@ -260,24 +287,24 @@ def isWin(plateau):
 
 #******************************************************************************************************
 #Construit un état fictif du jeu
-def construct_state(bleu,jaune,vert,rouge,heur=0):
+def construct_state(bleu,jaune,vert,rouge,idx_parent=0,heur=0):
 
-    return [bleu,jaune,vert,rouge,heur]
+    return [bleu,jaune,vert,rouge,idx_parent,heur]
 
 #processus de résolution de l'ia
 def iaSolution(plateau,bleu,jaune,vert,rouge):
     
     closed=[]
     open=[]
-    open.append(construct_state(bleu,jaune,vert,rouge,0))
+    open.append(construct_state(bleu,jaune,vert,rouge,None))
     compteur=0
-    while (open.count!=0 and compteur<1000):
+    while (open.count!=0 and compteur<3000):
         u=open[0]
         #print("je recommence avec ",u)
         del open[0]
         if (isWin(plateau)):
             print("Jeu terminé avec succès")
-            return 1
+            return closed
         else:
             #On génère les états qui peuvent être générés par u
             children=[]
@@ -286,27 +313,34 @@ def iaSolution(plateau,bleu,jaune,vert,rouge):
             jaune=u[1]
             vert=u[2]
             rouge=u[3] 
+            #poids=u[4]+1
             plateau=update_plateau(bleu, jaune, vert, rouge, plateau)
+            #display_plateau(plateau)
 
             for states in nextPositions(bleu,plateau):
-                children.append(construct_state(states,jaune,vert,rouge))
+                children.append(construct_state(states,jaune,vert,rouge,len(closed)))
             for states in nextPositions(jaune,plateau):
-                children.append(construct_state(bleu,states,vert,rouge))
+                children.append(construct_state(bleu,states,vert,rouge,len(closed)))
             for states in nextPositions(vert,plateau):
-                children.append(construct_state(bleu,jaune,states,rouge))
+                children.append(construct_state(bleu,jaune,states,rouge,len(closed)))
             for states in nextPositions(rouge,plateau):
-                children.append(construct_state(bleu,jaune,vert,states))
+                children.append(construct_state(bleu,jaune,vert,states,len(closed)))
             #Pour chaque child possible on vérifie s'il est dans les listes
             for child in children:
                 if(closed.count(child)==0 and (open.count(child)==0)):                         ##penser à ajouter qu'il n'existe pas avec un coût inférieur
                     open.append(child)
                     #print("j'ajoute ",child)
             closed.append(u)
-            #print(u)
             compteur+=1
-    display_plateau(plateau)
     return 0
-            
+
+def solutionList(t_closed):
+    a_result=[t_closed[len(t_closed)-1]]
+    while(a_result[len(a_result)-1][4]!=None):
+        idx_nest_elem=a_result[len(a_result)-1][4]
+        a_result.append(t_closed[idx_nest_elem])
+    return a_result
+
 
 
 
@@ -333,8 +367,6 @@ plateau = init_plateau()
 cible.append(random.randint(1,4)) 
 #Affichage du plateau
 display_plateau(plateau)
-plateau=update_plateau(bleu, jaune, vert, rouge, plateau)
-display_plateau(plateau)
 
 if(cible[2]==1):
     print("Bleu doit aller sur la cibe")
@@ -346,7 +378,13 @@ elif(cible[2]==4):
     print("Rouge doit aller sur la cibe")
 
 #Creation de la solution de l'ia 
-iaSolution(plateau,bleu,jaune,vert,rouge)
+result=iaSolution(plateau,bleu,jaune,vert,rouge)
+if(result!=0):
+    result=solutionList(result)
+    for line in result:
+            print (line)
+else:
+    print("aucun resultat trouvé")
 
 #choix quelle direction
 #compte nombre de coups / déplacement = nombre appel fonction
