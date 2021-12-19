@@ -291,8 +291,66 @@ def construct_state(bleu,jaune,vert,rouge,idx_parent=0,heur=0):
 
     return [bleu,jaune,vert,rouge,idx_parent,heur]
 
+#Insérer un élément dans la liste selon son heuristique
+def insertList(list, child):
+    n=0
+    inserted=0
+    while (n<len(list) and inserted==0):
+        if(list[n][5]<child[5]):
+            list.insert(n,child)
+            inserted=1
+        n+=1
+    if(inserted==0):
+        list.append(child)
+    return list
+        
+
+
 #processus de résolution de l'ia
 def iaSolution(plateau,bleu,jaune,vert,rouge):
+    
+    closed=[]
+    open=[]
+    open.append(construct_state(bleu,jaune,vert,rouge,None))
+    compteur=0
+    while (open.count!=0 and compteur<3000):
+        u=open[0]
+        #print("je recommence avec ",u)
+        del open[0]
+        if (isWin(plateau)):
+            print("Jeu terminé avec succès")
+            return closed
+        else:
+            #On génère les états qui peuvent être générés par u
+            children=[]
+
+            bleu=u[0]
+            jaune=u[1]
+            vert=u[2]
+            rouge=u[3] 
+            #poids=u[4]+1
+            plateau=update_plateau(bleu, jaune, vert, rouge, plateau)
+            #display_plateau(plateau)
+
+            for states in nextPositions(bleu,plateau):
+                children.append(construct_state(states,jaune,vert,rouge,len(closed)))
+            for states in nextPositions(jaune,plateau):
+                children.append(construct_state(bleu,states,vert,rouge,len(closed)))
+            for states in nextPositions(vert,plateau):
+                children.append(construct_state(bleu,jaune,states,rouge,len(closed)))
+            for states in nextPositions(rouge,plateau):
+                children.append(construct_state(bleu,jaune,vert,states,len(closed)))
+            #Pour chaque child possible on vérifie s'il est dans les listes
+            for child in children:
+                if(closed.count(child)==0 and (open.count(child)==0)):                         ##penser à ajouter qu'il n'existe pas avec un coût inférieur
+                    open=insertList(open, child)
+                    #print("j'ajoute ",child)
+            closed.append(u)
+            compteur+=1
+    return 0
+
+
+def iaSolution_largeurFirst(plateau,bleu,jaune,vert,rouge):
     
     closed=[]
     open=[]
