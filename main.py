@@ -3,7 +3,13 @@
 ###                             Samuel Bernard - Thomas Peyron
 ############################################################################################
 
+
+from tkinter import *
+from tkinter import messagebox
 import random
+import time
+
+SIZE = 500/19
 
 #Plateau contient les cases du plateau.
 #Les cases sont un tableau de type [id case, couleur case, mur droit, mur bas, mur gauche, mur haut]
@@ -18,10 +24,41 @@ jaune = []
 vert = []
 rouge = []
 
+selected = []
+
 #Declaration de la cible
 #Liste comprenant deux coordonées de position et un chiffre déterminant la couleur du pion devant atteindre la cible
 cible = []
 
+#Declaration de la fenetre contenant les boutons permettant de jouer et la représentation graphique du plateau
+#De type Fenetre
+fenetre = None
+
+#Declaration des 4 boutons permettant de choisir la direction du mouvement du pion
+#De type Button 
+up_button = None
+down_button = None
+right_button = None
+left_button = None
+
+#Declaration des 4 boutons permettant de choisir le pion à déplacer
+#De type Button 
+bleu_button = None
+vert_button = None
+jaune_button = None
+rouge_button = None
+
+#Declaration du canvas de type Canvas, des 4 ronds représentant les pions et le carré représentant la cible créés dans le canvas
+canvas = None
+bleu_oval = None
+vert_oval = None
+jaune_oval = None
+rouge_oval = None
+cible_carre = None
+
+#Declaration de la variable incrémentée à chaque déplacement d'un pion et du label mis à jour en conséquences
+nombre_coups = 0
+coups_label = None
 
 #Afficher le plateau sur la console
 def display_plateau(plateau):
@@ -42,7 +79,6 @@ def display_plateau(plateau):
             elif(plateau[y][x][1]==2):type=" J "
             elif(plateau[y][x][1]==3):type=" V "
             elif(plateau[y][x][1]==4):type=" R "
-            elif(plateau[y][x][1]==6):type=" O "
 
             #Présence de murs latéraux
             if(x==0):                                                                                               #colonne bord gauche
@@ -133,8 +169,6 @@ def init_plateau():
                 idx+=1
                 if(idx==idx_cible):
                     cible=[y,x]
-
-    plateau[cible[0]][cible[1]][1]=6
 
     #Type des cases dont les coordonnées sont celles des pions correspond :
     #1 : bleu
@@ -265,21 +299,9 @@ def nextPositions(p_pion,plateau):
     return a_p_next
 
 
-
-def move(p_pion):
-
-    plateau[p_pion[0]][p_pion[1]][1] = 0
-    p_pion = moveLeft(p_pion)
-    plateau[p_pion[0]][p_pion[1]][1] = 1
-    return p_pion
-
-
 def isWin(plateau):
     global cible
     if(cible[2]==plateau[cible[0]][cible[1]][1]):
-        #display_plateau(plateau)
-        #print(plateau[cible[0]][cible[1]][1])
-        #print(cible)
         return 1
     else:
         return 0
@@ -291,66 +313,8 @@ def construct_state(bleu,jaune,vert,rouge,idx_parent=0,heur=0):
 
     return [bleu,jaune,vert,rouge,idx_parent,heur]
 
-#Insérer un élément dans la liste selon son heuristique
-def insertList(list, child):
-    n=0
-    inserted=0
-    while (n<len(list) and inserted==0):
-        if(list[n][5]<child[5]):
-            list.insert(n,child)
-            inserted=1
-        n+=1
-    if(inserted==0):
-        list.append(child)
-    return list
-        
-
-
 #processus de résolution de l'ia
 def iaSolution(plateau,bleu,jaune,vert,rouge):
-    
-    closed=[]
-    open=[]
-    open.append(construct_state(bleu,jaune,vert,rouge,None))
-    compteur=0
-    while (open.count!=0 and compteur<3000):
-        u=open[0]
-        #print("je recommence avec ",u)
-        del open[0]
-        if (isWin(plateau)):
-            print("Jeu terminé avec succès")
-            return closed
-        else:
-            #On génère les états qui peuvent être générés par u
-            children=[]
-
-            bleu=u[0]
-            jaune=u[1]
-            vert=u[2]
-            rouge=u[3] 
-            #poids=u[4]+1
-            plateau=update_plateau(bleu, jaune, vert, rouge, plateau)
-            #display_plateau(plateau)
-
-            for states in nextPositions(bleu,plateau):
-                children.append(construct_state(states,jaune,vert,rouge,len(closed)))
-            for states in nextPositions(jaune,plateau):
-                children.append(construct_state(bleu,states,vert,rouge,len(closed)))
-            for states in nextPositions(vert,plateau):
-                children.append(construct_state(bleu,jaune,states,rouge,len(closed)))
-            for states in nextPositions(rouge,plateau):
-                children.append(construct_state(bleu,jaune,vert,states,len(closed)))
-            #Pour chaque child possible on vérifie s'il est dans les listes
-            for child in children:
-                if(closed.count(child)==0 and (open.count(child)==0)):                         ##penser à ajouter qu'il n'existe pas avec un coût inférieur
-                    open=insertList(open, child)
-                    #print("j'ajoute ",child)
-            closed.append(u)
-            compteur+=1
-    return 0
-
-
-def iaSolution_largeurFirst(plateau,bleu,jaune,vert,rouge):
     
     closed=[]
     open=[]
@@ -399,12 +363,339 @@ def solutionList(t_closed):
         a_result.append(t_closed[idx_nest_elem])
     return a_result
 
+#******************************************************************************************************
+#Developpement de l'interface graphique du jeu
+
+#Renvoie une chaine de caractère correspondant à la couleur de la cible (3e élément de sa liste)
+def cibleColorToString():
+    if(cible[2]==1):
+        s = "Bleu"
+    elif(cible[2]==2):
+        s = "Jaune"
+    elif(cible[2]==3):
+        s = "Vert"
+    elif(cible[2]==4):
+        s = "Rouge"
+    return s
+
+#Désactivation des quatres boutons du choix de la couleur du pion à bouger
+def disabledColorButtons():
+    bleu_button['state'] = DISABLED
+    vert_button['state'] = DISABLED
+    jaune_button['state'] = DISABLED
+    rouge_button['state'] = DISABLED
+
+#Activation des quatres boutons du choix de la couleur du pion à bouger
+def enabledColorButtons():
+    bleu_button['state'] = NORMAL
+    vert_button['state'] = NORMAL
+    jaune_button['state'] = NORMAL
+    rouge_button['state'] = NORMAL
+
+#Désactivation des quatres boutons du choix de la direction du pion sélectionné
+def disabledDirectionButtons():
+    up_button['state'] = DISABLED
+    left_button['state'] = DISABLED
+    right_button['state'] = DISABLED
+    down_button['state'] = DISABLED
+
+#Activation des quatres boutons du choix de la direction du pion si celui ci peut se déplacer dans la direction 
+#C'est à dire que la position du pion après s'être déplacée est différente que s'il ne s'était pas déplacé
+#pion - paramètre correspondant à la copie du pion qu'on souhaite déplacé
+#plateau - paramètre correpondant à la variable global plateau représentant l'état du jeu
+def enabledDirectionButtons(pion,plateau):
+    if(moveLeft(pion,plateau)!=pion):
+        left_button['state'] = NORMAL
+    if(moveRight(pion,plateau)!=pion):
+        right_button['state'] = NORMAL
+    if(moveDown(pion,plateau)!=pion):
+        down_button['state'] = NORMAL
+    if(moveUp(pion,plateau)!=pion):
+        up_button['state'] = NORMAL
+
+#Actions réalisées lors de la pression sur un bouton de choix de couleur
+#pion - paramètre correspondant à la copie du pion qu'on souhaite déplacé
+def selectPion(pion):
+    #La variable global selected prend comme valeur celle du pion sélectionné
+    #Cette variable permet de transmettre la valeur du pion qui va se déplacer aux fonctions de mouvemet définies ensuite 
+    global selected
+    selected = pion
+    disabledColorButtons()
+    enabledDirectionButtons(selected,plateau)
+
+#Actions réalisées lors de la pression du bouton up_button :
+#Déplacer le pion séléctionné vers le haut et mettre à jour le plateau et l'affichage
+#pion - paramètre correspondant 
+def moveToUp():
+    #Définition des variables globales dont les valeurs vont être modifiées
+    global plateau, selected, fenetre, bleu, jaune, vert, rouge, canvas, nombre_coups
+
+    #Disjonction de cas suivant la couleur du pion
+    #c'est à dire que le pion selected correspond à l'un des quatre pion
+    #Dans chaque cas, déplacement du pion correspondant vers le haut 
+    if(selected==bleu):
+        bleu = moveUp(bleu,plateau)
+    elif(selected==jaune):
+        jaune = moveUp(jaune,plateau)
+    elif(selected==vert):
+        vert = moveUp(vert,plateau)
+    elif(selected==rouge):
+        rouge = moveUp(rouge,plateau)
+
+    #Suppression des représentations graphiques des 4 pions du canvas 
+    canvas.delete(fenetre,bleu_oval)
+    canvas.delete(fenetre,vert_oval)
+    canvas.delete(fenetre,jaune_oval)
+    canvas.delete(fenetre,rouge_oval)
+
+    #Un mouvement donc un coup en plus de réalisé
+    nombre_coups = nombre_coups + 1
+
+    #Mise à jour de la variable plateau avec les nouvelles position
+    #Puis mise à jour de l'interface graphique
+    update_plateau(bleu,jaune,vert,rouge,plateau)
+    displayGame()
+
+    #Désactivation des boutons de déplacement et activation de ceux de couleur
+    disabledDirectionButtons()
+    enabledColorButtons()
+
+    #Si le pion correspondant a atteint la cible,
+    #alors ouverture d'une fenêtre d'information et désactivation de tous les boutons car partie terminée
+    if(isWin(plateau)==1):
+        messagebox.showinfo("Succès", "Vous avez atteint la cible en " + str(nombre_coups) + " coups !")
+        disabledColorButtons()
+        disabledDirectionButtons()
+
+#Actions réalisées lors de la pression du bouton left_button :
+#Déplacer le pion séléctionné vers la gauche et mettre à jour le plateau et l'affichage
+def moveToLeft():
+    
+    global selected, plateau, fenetre, bleu, jaune, vert, rouge, canvas, nombre_coups
+
+    if(selected==bleu):
+        bleu = moveLeft(bleu,plateau)
+    elif(selected==jaune):
+        jaune = moveLeft(jaune,plateau)
+    elif(selected==vert):
+        vert = moveLeft(vert,plateau)
+    elif(selected==rouge):
+        rouge = moveLeft(rouge,plateau)
+
+    canvas.delete(fenetre,bleu_oval)
+    canvas.delete(fenetre,vert_oval)
+    canvas.delete(fenetre,jaune_oval)
+    canvas.delete(fenetre,rouge_oval)
+
+    nombre_coups = nombre_coups + 1
+
+    update_plateau(bleu,jaune,vert,rouge,plateau)
+    displayGame()
+
+    disabledDirectionButtons()
+    enabledColorButtons()
+
+    if(isWin(plateau)==1):
+        messagebox.showinfo("Succès", "Vous avez atteint la cible en " + str(nombre_coups) + " coups !")
+        disabledColorButtons()
+        disabledDirectionButtons()
 
 
+#Actions réalisées lors de la pression du bouton right_button :
+#Déplacer le pion séléctionné vers la droite et mettre à jour le plateau et l'affichage
+def moveToRight():
+    
+    global selected, plateau, fenetre, bleu, jaune, vert, rouge, nombre_coups
 
+    if(selected==bleu):
+        bleu = moveRight(bleu,plateau)
+    elif(selected==jaune):
+        jaune = moveRight(jaune,plateau)
+    elif(selected==vert):
+        vert = moveRight(vert,plateau)
+    elif(selected==rouge):
+        rouge = moveRight(rouge,plateau)
+
+    canvas.delete(fenetre,bleu_oval)
+    canvas.delete(fenetre,vert_oval)
+    canvas.delete(fenetre,jaune_oval)
+    canvas.delete(fenetre,rouge_oval)
+
+    nombre_coups = nombre_coups + 1
+
+    update_plateau(bleu,jaune,vert,rouge,plateau)
+    displayGame()
+
+    disabledDirectionButtons()
+    enabledColorButtons()
+
+    if(isWin(plateau)==1):
+        messagebox.showinfo("Succès", "Vous avez atteint la cible en " + str(nombre_coups) + " coups !")
+        disabledColorButtons()
+        disabledDirectionButtons()
+
+#Actions réalisées lors de la pression du bouton down_button :
+#Déplacer le pion séléctionné vers le bas et mettre à jour le plateau et l'affichage
+def moveToDown():
+    
+    global selected, plateau, fenetre, bleu, jaune, vert, rouge, canvas, nombre_coups
+
+    if(selected==bleu):
+        bleu = moveDown(bleu,plateau)
+    elif(selected==jaune):
+        jaune = moveDown(jaune,plateau)
+    elif(selected==vert):
+        vert = moveDown(vert,plateau)
+    elif(selected==rouge):
+        rouge = moveDown(rouge,plateau)
+
+    canvas.delete(fenetre,bleu_oval)
+    canvas.delete(fenetre,vert_oval)
+    canvas.delete(fenetre,jaune_oval)
+    canvas.delete(fenetre,rouge_oval)
+
+    nombre_coups = nombre_coups + 1
+
+    update_plateau(bleu,jaune,vert,rouge,plateau)
+    displayGame()
+
+    disabledDirectionButtons()
+    enabledColorButtons()
+
+    if(isWin(plateau)==1):
+        messagebox.showinfo("Succès", "Vous avez atteint la cible en " + str(nombre_coups) + " coups !")
+        disabledColorButtons()
+        disabledDirectionButtons()
+
+#Définition de la position sur le canvas en fonction de la coordonnée sur le plateau d'un élement
+#coord - paramètre 
+def interfacePos(coord):
+    return coord*500/16+2
+
+#Définition de l'affichage graphique du plateau de jeu dont nottament le canvas
+def displayGame():
+    #Définition des variables globales dont les valeurs vont être modifiées
+    global plateau, bleu_oval, vert_oval, jaune_oval, rouge_oval, cible_carre, coups_label
+
+    #Suppression de tous les éléments présents dans le canvas 
+    canvas.delete(all)
+
+    #Création d'un rectangle orange correspondant à la cible
+    cible_carre = canvas.create_rectangle(interfacePos(cible[1]),interfacePos(cible[0]),interfacePos(cible[1])+SIZE,interfacePos(cible[0])+SIZE, fill = 'orange',  outline = 'orange')
+    
+    #Pour chaque case du plateau
+    for y in range(16):
+        for x in range(16):
+            #Type de case
+            if(plateau[y][x][1]==5):
+                #Création de rectangles noir correspondant au centre non accessible
+                canvas.create_rectangle(interfacePos(x),interfacePos(y),interfacePos(x)+SIZE,interfacePos(y)+SIZE, fill = 'black',  outline = 'black')
+
+            elif(plateau[y][x][1]==1):
+                #Création d'un cercle bleu correspondant au pion bleu
+                bleu_oval = canvas.create_oval(interfacePos(x),interfacePos(y),interfacePos(x)+SIZE,interfacePos(y)+SIZE, fill = 'blue',  outline = 'blue')
+            
+            elif(plateau[y][x][1]==2):
+                #Création d'un cercle jaune correspondant au pion jaune
+                jaune_oval = canvas.create_oval(interfacePos(x),interfacePos(y),interfacePos(x)+SIZE,interfacePos(y)+SIZE, fill = 'yellow',  outline = 'yellow')
+
+            elif(plateau[y][x][1]==3):
+                #Création d'un cercle vert correspondant au pion vert
+                vert_oval = canvas.create_oval(interfacePos(x),interfacePos(y),interfacePos(x)+SIZE,interfacePos(y)+SIZE, fill = 'green',  outline = 'green')
+
+            elif(plateau[y][x][1]==4):
+                #Création d'un cercle rouge correspondant au pion rouge
+                rouge_oval = canvas.create_oval(interfacePos(x),interfacePos(y),interfacePos(x)+SIZE,interfacePos(y)+SIZE, fill = 'red',  outline = 'red')
+
+            #Présence de murs latéraux
+            #Si mur à droite ou mur sur la prochaine case à gauche
+            if(plateau[y][x][2]==1 or (x+1<=15 and plateau[y][x+1][4]==1)):                                                                                               
+                canvas.create_line(interfacePos(x+1)-1,interfacePos(y)-1,interfacePos(x+1)-1,interfacePos(y)-1+SIZE,width = 3.5, fill = 'black')
+            
+            #Présence de murs horizontaux
+            #Si mur à droite en bas sur la prochaine case en haut
+            if(plateau[y][x][3]==1 or (y+1<=15 and plateau[y+1][x][5]==1)):
+                canvas.create_line(interfacePos(x)-1,interfacePos(y+1)-1,interfacePos(x)-1+SIZE,interfacePos(y+1)-1,width = 3.5, fill = 'black')
+
+    #Placement du canvas dans la fenêtre
+    canvas.place(x=5,y=5)
+
+    #Mise à jour du label indiquant le nombre de coups réalisés
+    coups_label['text'] = "Nombre de coups = " + str(nombre_coups)
+
+#Inittialisation d'une partie 
+def init_game():
+    #Définition des variables globales dont les valeurs vont être modifiées
+    global fenetre, canvas
+    global up_button, down_button, left_button, right_button
+    global bleu_button, vert_button, jaune_button, rouge_button
+    global plateau, selected, nombre_coups, coups_label
+
+    #Création d'une fenètre de taille 750 par 510 
+    fenetre = Tk()
+    fenetre.geometry("750x510")
+
+    #Création d'un canvas correspondant au plateau de jeu
+    canvas = Canvas(fenetre, width=500, height=500, background='light yellow')
+
+    #Création des limites du plateau correspondant à un rectagle dont l'épaisseur du trait est épais.
+    canvas.create_rectangle(4,4,500,500, width = 3.5, outline = 'black')
+
+    #Création des lignes verticales et horizontales formant les cases du plateau
+    for i in range(15):
+        canvas.create_line(500/16*(i+1),0,500/16*(i+1),500)
+        canvas.create_line(0,500/16*(i+1),500,500/16*(i+1))
+
+    #Création et positionnement du cadre comprenant les différentes informations 
+    info_frame = Frame(fenetre,width = 220, height = 20, borderwidth = 2, relief = GROOVE)
+    info_frame.place(x=520,y=20)
+
+    #Création et positionnement du cadre comprenant les boutons de choix du pion
+    color_frame = LabelFrame(fenetre, text="Choix du pion", width = 220, height = 180)
+    color_frame.place(x=520,y=80)
+
+    #Création et positionnement du cadre comprenant les boutons de choix de la direction
+    direction_frame = LabelFrame(fenetre, text="Choix de la direction", width = 220, height = 230)
+    direction_frame.place(x=520,y=270)
+
+    #Création des deux labels du cadre info_frame
+    #Le premier indiquant la couleur du pion devant accéder à la cible
+    #Le second indiquant le nombre de coups réalisés
+    Label(info_frame,text = "Le pion " + cibleColorToString() + " doit aller à la cible.").pack(padx=2.5, pady=2.5)
+    coups_label  = Label(info_frame, text = "Nombre de coups = " + str(nombre_coups))
+    coups_label.pack(padx=2.5, pady=2.5)
+
+    #Création des 4 boutons de choix du pion
+    #Chaque bouton appelle la fonction selectPion avec en paramètre le pion de la couleur correspondante 
+    bleu_button = Button(color_frame, text ='Bleu', width = 10, height = 3, command = lambda :selectPion(bleu))
+    vert_button = Button(color_frame, text ='Vert', width = 10, height = 3, command = lambda :selectPion(vert))
+    jaune_button = Button(color_frame, text ='Jaune', width = 10, height = 3, command = lambda :selectPion(jaune))
+    rouge_button = Button(color_frame, text ='Rouge', width = 10, height = 3, command = lambda :selectPion(rouge))
+
+    #Création des 4 boutons du choix de la direction
+    #Chaque fonction appelle la fonction de déplacement correspondant
+    up_button = Button(direction_frame, text ='Haut', width = 10, height = 3, state = DISABLED, command = lambda :moveToUp())
+    left_button = Button(direction_frame, text ='Gauche', width = 10, height = 3, state = DISABLED, command = lambda :moveToLeft())
+    right_button = Button(direction_frame, text ='Droit', width = 10, height = 3, state = DISABLED, command = lambda :moveToRight())
+    down_button = Button(direction_frame, text ='Bas', width = 10, height = 3, state = DISABLED, command = lambda :moveToDown())
+
+    #Positionnement des boutons dans leur cadre respectif
+    bleu_button.place(x=15, y=20)
+    vert_button.place(x=115, y=20)
+    jaune_button.place(x=15, y=90)
+    rouge_button.place(x=115, y=90)
+
+    up_button.place(x=60, y=15)
+    left_button.place(x=20, y=75)
+    right_button.place(x=100, y=75)
+    down_button.place(x=60, y=135)
+
+    #Affichage du canvas
+    displayGame()
+    
 #******************************************************************************************************
 
-#Initialisation des coordonnées des 4 pions et de la cible
+#Initialisation des coordonnées des 4 pions
 #les 4 pions et la cible possèdent des coordonnées initiales différentes 
 condition = True
 while condition == True:
@@ -412,20 +703,20 @@ while condition == True:
     jaune = init_pion()
     vert = init_pion()
     rouge = init_pion()
-    #cible = init_pion()
     if(bleu != jaune != vert != rouge != cible):
         condition = False
 
-#Ajout d'un troisième élément à la liste correspondant à la cible
-#identifie la couleur du pion devant atteindre la cible
-
 #Initialisation du plateau
 plateau = init_plateau()
-#choix de la couleur qui doit aller sur la cible
-cible.append(random.randint(1,4)) 
-#Affichage du plateau
+
+#Ajout d'un troisième élément à la liste correspondant à la cible
+#identifie la couleur du pion devant atteindre la cible
+cible.append(random.randint(1,4))
+
+#Affichage du plateau en console
 display_plateau(plateau)
 
+#Affichage de la couleur du pion devant atteindre la cible
 if(cible[2]==1):
     print("Bleu doit aller sur la cibe")
 elif(cible[2]==2):
@@ -435,6 +726,10 @@ elif(cible[2]==3):
 elif(cible[2]==4):
     print("Rouge doit aller sur la cibe")
 
+init_game()
+fenetre.mainloop()
+
+"""
 #Creation de la solution de l'ia 
 result=iaSolution(plateau,bleu,jaune,vert,rouge)
 if(result!=0):
@@ -443,10 +738,4 @@ if(result!=0):
             print (line)
 else:
     print("aucun resultat trouvé")
-
-#choix quelle direction
-#compte nombre de coups / déplacement = nombre appel fonction
-#algo recherche
-#interface graphique
-
-
+"""
