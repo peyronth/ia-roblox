@@ -326,6 +326,33 @@ def insertList(list, child):
         list.append(child)
     return list
 
+#détermine si une etape est équivalent à un autre
+def is_equiv(elem1,elem2,idx_cible):
+    if(elem1[0]==elem2[0] and elem1[1]==elem2[1] and elem1[2]==elem2[2] and elem1[3]==elem2[3]):
+        return True
+    else:
+        verif=1
+        i=0
+        while(verif!=0 and i<4):
+            if(not elem1.count(elem1[i])==elem2.count(elem1[i])):
+                return False
+            else:
+                i+=1
+        return True
+        
+
+
+
+#Retroune si l'état n'est pas dans une liste
+def notIn(element,list):
+
+    ##Pour chaque element
+    for list_elem in list:
+        if(is_equiv(list_elem,element,cible[2])):
+            return 0
+    return 1
+        
+
 
 #processus de résolution de l'ia
 def iaSolution(plateau,bleu,jaune,vert,rouge):
@@ -361,9 +388,10 @@ def iaSolution(plateau,bleu,jaune,vert,rouge):
                 children.append(construct_state(bleu,jaune,states,rouge,len(closed)))
             for states in nextPositions(rouge,plateau):
                 children.append(construct_state(bleu,jaune,vert,states,len(closed)))
+            
             #Pour chaque child possible on vérifie s'il est dans les listes
             for child in children:
-                if(closed.count(child)==0 and (open.count(child)==0)):                         ##penser à ajouter qu'il n'existe pas avec un coût inférieur
+                if(notIn(child,open)==1 and notIn(child,closed)==1):                         ##penser à ajouter qu'il n'existe pas avec un coût inférieur
                     open=insertList(open, child)
                     #print("j'ajoute ",child)
             closed.append(u)
@@ -377,7 +405,7 @@ def iaSolution_largeurFirst(plateau,bleu,jaune,vert,rouge):
     open=[]
     open.append(construct_state(bleu,jaune,vert,rouge,None))
     compteur=0
-    while (open.count!=0 and compteur<3000):
+    while (open.count!=0 and compteur<6000):
         u=open[0]
         #print("je recommence avec ",u)
         del open[0]
@@ -751,7 +779,6 @@ def init_game():
     displayGame()
     
 #******************************************************************************************************
-
 #Initialisation des coordonnées des 4 pions
 #les 4 pions et la cible possèdent des coordonnées initiales différentes 
 condition = True
