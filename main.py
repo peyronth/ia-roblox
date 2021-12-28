@@ -8,6 +8,7 @@ from tkinter import *
 from tkinter import messagebox
 import random
 import time
+import copy
 
 SIZE = 500/19
 
@@ -86,6 +87,7 @@ def display_plateau(plateau):
             elif(plateau[y][x][1]==2):type=" J "
             elif(plateau[y][x][1]==3):type=" V "
             elif(plateau[y][x][1]==4):type=" R "
+            elif(plateau[y][x][1]==6):type=" O "
 
             #Présence de murs latéraux
             if(x==0):                                                                                               #colonne bord gauche
@@ -154,7 +156,7 @@ def init_plateau():
     plateau[15][random.randint(7, 14)][2]=1
 
     #On détermine la position de la cible dans un de ces angles
-    idx_cible=random.randint(0, 15)
+    idx_cible=random.randint(1, 15)
     idx=0
 
     #4 Angle par quart de tableau chaque angle ne doit pas toucher une autre parois
@@ -176,15 +178,14 @@ def init_plateau():
                 idx+=1
                 if(idx==idx_cible):
                     cible=[y,x]
-
     #Type des cases dont les coordonnées sont celles des pions correspond :
     #1 : bleu
     #2 : jaune etc.
-    plateau[bleu[0]][bleu[1]][1] = 1
+    """plateau[bleu[0]][bleu[1]][1] = 1
     plateau[jaune[0]][jaune[1]][1] = 2
     plateau[vert[0]][vert[1]][1] = 3
     plateau[rouge[0]][rouge[1]][1] = 4
-    
+    """
     return plateau
 
 #Mise à jour du plateau lorsqu'un ou plusieurs pions ont été déplacés
@@ -312,8 +313,68 @@ def isWin(plateau):
 
 
 #******************************************************************************************************
+#initialise le tableau permettant le calcul de l'heuristique
+def initRankArray(plateau,cible):
+    array=[]
+    for i in range(16):
+        line=[9]*16
+        array.append(line)
+
+    #on met l'emplacement de la cible à 0
+    array[cible[0]][cible[1]]=0
+    
+    #emplacement de départ
+    p_fictif=[cible[0],cible[1]]
+
+    a_traiter=[]
+    a_traiter.append(p_fictif)
+
+    while(a_traiter!=[]):
+        p_fictif=a_traiter[0]
+        value=array[p_fictif[0]][p_fictif[1]]+1
+        up=moveUp(p_fictif,plateau)
+        if(up!=p_fictif):
+            for y in range(up[0],p_fictif[0]):
+                if(array[y][up[1]]>value):
+                    array[y][up[1]]=value
+                    a_traiter.append([y,up[1]])
+        down=moveDown(p_fictif,plateau)
+        if(down!=p_fictif):
+            for y in range(p_fictif[0],down[0]):
+                if(array[y+1][down[1]]>value):
+                    array[y+1][down[1]]=value
+                    a_traiter.append([y+1,down[1]])
+        right=moveRight(p_fictif,plateau)
+        if(right!=p_fictif):
+            for x in range(p_fictif[1],right[1]):
+                if(array[right[0]][x+1]>value):
+                    array[right[0]][x+1]=value
+                    a_traiter.append([right[0],x+1])
+        left=moveLeft(p_fictif,plateau)
+        if(left!=p_fictif):
+            for x in range(left[1],p_fictif[1]):
+                if(array[left[0]][x]>value):
+                    array[left[0]][x]=value
+                    a_traiter.append([left[0],x])
+        a_traiter.pop(0)
+
+
+    return array  
+
+#Calcul de l'heuristique grâce au tableau
+def calcul_heuristique(bleu,jaune,vert,rouge):
+    if(cible[2]==1):p_cible=bleu
+    elif(cible[2]==2):p_cible=jaune
+    elif(cible[2]==3):p_cible=vert
+    elif(cible[2]==4):p_cible=rouge
+
+    return 10-cible_rank[p_cible[0]][p_cible[1]]
+
+
 #Construit un état fictif du jeu
 def construct_state(bleu,jaune,vert,rouge,idx_parent=0,heur=0):
+
+    heur=calcul_heuristique(bleu,jaune,vert,rouge)
 
     return [bleu,jaune,vert,rouge,idx_parent,heur]
 
@@ -342,7 +403,10 @@ def is_equiv(elem1,elem2,idx_cible):
                 return False
             else:
                 i+=1
-        return True
+        if(elem1[idx_cible]==elem2[idx_cible]):
+            return True
+        else:
+            return False
         
 
 
@@ -365,7 +429,7 @@ def iaSolution(plateau,bleu,jaune,vert,rouge):
     open=[]
     open.append(construct_state(bleu,jaune,vert,rouge,None))
     compteur=0
-    while (open.count!=0 and compteur<1000):
+    while (open.count!=0 and compteur<1500):
         u=open[0]
         #print("je recommence avec ",u)
         del open[0]
