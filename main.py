@@ -429,7 +429,7 @@ def iaSolution(plateau,bleu,jaune,vert,rouge):
     open=[]
     open.append(construct_state(bleu,jaune,vert,rouge,None))
     compteur=0
-    while (open.count!=0 and compteur<1500):
+    while (open.count!=0 and compteur<3000):
         u=open[0]
         #print("je recommence avec ",u)
         del open[0]
@@ -924,6 +924,10 @@ while condition1 == True:
         rouge = init_pion()
         #Initialisation du plateau
         plateau = init_plateau()
+        plateau_withoutpion=copy.deepcopy(plateau)
+        cible_rank=initRankArray(plateau_withoutpion,cible)
+        update_plateau(bleu,jaune,vert,rouge,plateau)
+
         #Ajout d'un troisième élément à la liste correspondant à la cible
         #identifie la couleur du pion devant atteindre la cible
         cible.append(random.randint(1,4))
