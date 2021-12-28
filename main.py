@@ -61,6 +61,13 @@ cible_carre = None
 nombre_coups = 0
 coups_label = None
 
+result = []
+ia_button = None
+ia_pion_label = None
+ia_direction_label = None
+nombre_coups_ia = 0
+num_pion_ia = 0
+
 #Afficher le plateau sur la console
 def display_plateau(plateau):
     
@@ -184,9 +191,6 @@ def init_plateau():
 #Mise à jour du plateau lorsqu'un ou plusieurs pions ont été déplacés
 def update_plateau(bleu, jaune, vert, rouge, plateau):
     
-    #on place la cible
-    plateau[cible[0]][cible[1]][1] = 6
-    
     #On change la couleur de la case si le robot à bougé
     if(not plateau[bleu[0]][bleu[1]][1] == 1):
         #on enleve l'ancienne case de cette couleur
@@ -244,7 +248,7 @@ def init_pion():
 
 #Supprimer et vérifie si le type de la case est carré vide uniquement
 def isEmpty(p_case,plateau):
-    return(plateau[p_case[0]][p_case[1]][1] == 0 or plateau[p_case[0]][p_case[1]][1] == 6)
+    return(plateau[p_case[0]][p_case[1]][1] == 0)
 
 
 def moveLeft(p_pion,plateau):
@@ -591,14 +595,8 @@ def moveToUp():
     elif(selected==rouge):
         rouge = moveUp(rouge,plateau)
 
-    #Suppression des représentations graphiques des 4 pions du canvas 
-    canvas.delete(fenetre,bleu_oval)
-    canvas.delete(fenetre,vert_oval)
-    canvas.delete(fenetre,jaune_oval)
-    canvas.delete(fenetre,rouge_oval)
-
     #Un mouvement donc un coup en plus de réalisé
-    nombre_coups = nombre_coups + 1
+    nombre_coups += 1
 
     #Mise à jour de la variable plateau avec les nouvelles position
     #Puis mise à jour de l'interface graphique
@@ -631,12 +629,7 @@ def moveToLeft():
     elif(selected==rouge):
         rouge = moveLeft(rouge,plateau)
 
-    canvas.delete(fenetre,bleu_oval)
-    canvas.delete(fenetre,vert_oval)
-    canvas.delete(fenetre,jaune_oval)
-    canvas.delete(fenetre,rouge_oval)
-
-    nombre_coups = nombre_coups + 1
+    nombre_coups += 1
 
     update_plateau(bleu,jaune,vert,rouge,plateau)
     displayGame()
@@ -665,12 +658,7 @@ def moveToRight():
     elif(selected==rouge):
         rouge = moveRight(rouge,plateau)
 
-    canvas.delete(fenetre,bleu_oval)
-    canvas.delete(fenetre,vert_oval)
-    canvas.delete(fenetre,jaune_oval)
-    canvas.delete(fenetre,rouge_oval)
-
-    nombre_coups = nombre_coups + 1
+    nombre_coups += 1
 
     update_plateau(bleu,jaune,vert,rouge,plateau)
     displayGame()
@@ -698,12 +686,7 @@ def moveToDown():
     elif(selected==rouge):
         rouge = moveDown(rouge,plateau)
 
-    canvas.delete(fenetre,bleu_oval)
-    canvas.delete(fenetre,vert_oval)
-    canvas.delete(fenetre,jaune_oval)
-    canvas.delete(fenetre,rouge_oval)
-
-    nombre_coups = nombre_coups + 1
+    nombre_coups += 1
 
     update_plateau(bleu,jaune,vert,rouge,plateau)
     displayGame()
@@ -726,7 +709,12 @@ def displayGame():
     #Définition des variables globales dont les valeurs vont être modifiées
     global plateau, bleu_oval, vert_oval, jaune_oval, rouge_oval, cible_carre, coups_label
 
-    #Suppression de tous les éléments présents dans le canvas 
+    #Suppression de tous les éléments présents dans le canvas
+    #Suppression des représentations graphiques des 4 pions du canvas 
+    canvas.delete(fenetre,bleu_oval)
+    canvas.delete(fenetre,vert_oval)
+    canvas.delete(fenetre,jaune_oval)
+    canvas.delete(fenetre,rouge_oval) 
     canvas.delete(all)
 
     #Création d'un rectangle orange correspondant à la cible
@@ -776,13 +764,15 @@ def displayGame():
 def init_game():
     #Définition des variables globales dont les valeurs vont être modifiées
     global fenetre, canvas
+    global plateau, selected
+    global nombre_coups, coups_label
     global up_button, down_button, left_button, right_button
     global bleu_button, vert_button, jaune_button, rouge_button
-    global plateau, selected, nombre_coups, coups_label
-
+    global ia_button, ia_pion_label, ia_direction_label
+    
     #Création d'une fenètre de taille 750 par 510 
     fenetre = Tk()
-    fenetre.geometry("750x510")
+    fenetre.geometry("880x510")
 
     #Création d'un canvas correspondant au plateau de jeu
     canvas = Canvas(fenetre, width=500, height=500, background='light yellow')
@@ -807,6 +797,9 @@ def init_game():
     direction_frame = LabelFrame(fenetre, text="Choix de la direction", width = 220, height = 230)
     direction_frame.place(x=520,y=270)
 
+    solution_frame = LabelFrame(fenetre,text="Solution", width = 120, height = 180)
+    solution_frame.place(x=750,y=80)
+
     #Création des deux labels du cadre info_frame
     #Le premier indiquant la couleur du pion devant accéder à la cible
     #Le second indiquant le nombre de coups réalisés
@@ -825,8 +818,18 @@ def init_game():
     #Chaque fonction appelle la fonction de déplacement correspondant
     up_button = Button(direction_frame, text ='Haut', width = 10, height = 3, state = DISABLED, command = lambda :moveToUp())
     left_button = Button(direction_frame, text ='Gauche', width = 10, height = 3, state = DISABLED, command = lambda :moveToLeft())
-    right_button = Button(direction_frame, text ='Droit', width = 10, height = 3, state = DISABLED, command = lambda :moveToRight())
+    right_button = Button(direction_frame, text ='Droite', width = 10, height = 3, state = DISABLED, command = lambda :moveToRight())
     down_button = Button(direction_frame, text ='Bas', width = 10, height = 3, state = DISABLED, command = lambda :moveToDown())
+
+    #Création d'un bouton permettant de lancer l'affichage de la solution proposée par l'IA
+    ia_button = Button(solution_frame, text ='Génération',width = 10, height = 3, command = lambda :display_solution(result))
+
+    #Création du label indiquant l'action réalisée par l'IA
+    ia_pion_label = Label(solution_frame)
+    ia_direction_label = Label(solution_frame)
+
+    #Création du bouton permettant de quitter l'application
+    quit_button = Button(fenetre, text ='Quitter', width = 10, height = 3, command = lambda :fenetre.destroy())
 
     #Positionnement des boutons dans leur cadre respectif
     bleu_button.place(x=15, y=20)
@@ -839,58 +842,112 @@ def init_game():
     right_button.place(x=100, y=75)
     down_button.place(x=60, y=135)
 
+    ia_button.place(x=20,y=20)
+    ia_pion_label.place(x=1,y=90)
+    ia_direction_label.place(x=1,y=110)
+    
+    quit_button.place(x=770,y=425)
+
     #Affichage du canvas
     displayGame()
-    
+
 #******************************************************************************************************
-#Initialisation du plateau
-plateau = init_plateau()
-plateau_withoutpion=copy.deepcopy(plateau)
+#Affichage de la solution de l'IA
 
-#Initialisation des coordonnées des 4 pions
-#les 4 pions et la cible possèdent des coordonnées initiales différentes 
-condition = True
-while condition == True:
-    bleu = init_pion()
-    jaune = init_pion()
-    vert = init_pion()
-    rouge = init_pion()
-    if(bleu != jaune != vert != rouge != cible):
-        condition = False
+#Renvoie une chaine de caractère correspondant à la couleur de chaque pion de la liste result
+def colorIndexPion(index):
+    if(index==0):
+        s = "Bleu"
+    elif(index==1):
+        s = "Jaune"
+    elif(index==2):
+        s = "Vert"
+    elif(index==3):
+        s = "Rouge"
+    return s
 
-#Mise en place des pions sur le plateau
-update_plateau(bleu,jaune,vert,rouge,plateau)
+def colorMovedPion(result, nombre_coups_ia):
+    global num_pion_ia
+    num_pion_ia = 0
+    for pion in result[nombre_coups_ia]:
+        if (pion != result[nombre_coups_ia-1][num_pion_ia] and num_pion_ia < 4):
+            selected = colorIndexPion(num_pion_ia)
+        else:
+            num_pion_ia += 1
 
-#Initialisation du tabeau aidant à l'IA
-cible_rank=initRankArray(plateau_withoutpion,cible)
+    return selected
+
+def dirMovedPion(result, nombre_coups_ia):
+    if(result[nombre_coups_ia][num_pion_ia][0] < result[nombre_coups_ia-1][num_pion_ia][0]):
+        s = " ↑ "
+    elif (result[nombre_coups_ia][num_pion_ia][0] > result[nombre_coups_ia-1][num_pion_ia][0]):
+        s = " ↓ "
+    elif(result[nombre_coups_ia][num_pion_ia][1] < result[nombre_coups_ia-1][num_pion_ia][1]):
+        s = " ← "
+    elif (result[nombre_coups_ia][num_pion_ia][1] > result[nombre_coups_ia-1][num_pion_ia][1]):
+        s = " → "
+
+    return s
+
+def display_solution(result):
+    global nombre_coups_ia, ia_pion_label, ia_direction_label, ia_button, plateau
+    #afficher label nb coups
+    if(nombre_coups_ia==0):
+        messagebox.showinfo("Solution", "L'IA a atteint la cible en " + str(len(result)-1) + " coups !")
+        ia_button['text'] = 'Suivant'
+        plateau = update_plateau(result[nombre_coups_ia][0],result[nombre_coups_ia][1],result[nombre_coups_ia][2],result[nombre_coups_ia][3],plateau)
+        displayGame()
+        disabledColorButtons()
+        disabledDirectionButtons()
+    elif(nombre_coups_ia < len(result)):
+        ia_pion_label['text'] = "Pion : " +colorMovedPion(result,nombre_coups_ia)
+        ia_direction_label['text'] = "Direction : " +dirMovedPion(result,nombre_coups_ia)
+        plateau = update_plateau(result[nombre_coups_ia][0],result[nombre_coups_ia][1],result[nombre_coups_ia][2],result[nombre_coups_ia][3],plateau)
+        displayGame()
+    
+    nombre_coups_ia += 1
+
+    if(nombre_coups_ia >= len(result)):
+        ia_button['state'] = DISABLED
+
+#******************************************************************************************************
+
+condition1 = True
+while condition1 == True:
+    #Initialisation des coordonnées des 4 pions
+    #les 4 pions et la cible possèdent des coordonnées initiales différentes 
+    condition2 = True
+    while condition2 == True:
+        bleu = init_pion()
+        jaune = init_pion()
+        vert = init_pion()
+        rouge = init_pion()
+        #Initialisation du plateau
+        plateau = init_plateau()
+        #Ajout d'un troisième élément à la liste correspondant à la cible
+        #identifie la couleur du pion devant atteindre la cible
+        cible.append(random.randint(1,4))
+        if(bleu != jaune and bleu != vert and bleu != rouge and jaune != vert and jaune != rouge and vert != rouge
+        and bleu != cible and jaune != cible and vert != cible and rouge != cible):
+            condition2 = False
+    
+    #Creation de la solution de l'ia 
+    print("Chargement en cours...")
+    result=iaSolution(plateau,bleu,jaune,vert,rouge)
+    if(result!=0):
+        condition1 = False
+        result=solutionList(result)
+        result.reverse()
+        
+        for line in result:
+                print (line)
+        
+    else:
+        print("aucun resultat trouvé")
 
 
-#Ajout d'un troisième élément à la liste correspondant à la cible
-#identifie la couleur du pion devant atteindre la cible
-cible.append(random.randint(1,4))
-
-#Affichage du plateau en console
-#display_plateau(plateau)
-
-#Affichage de la couleur du pion devant atteindre la cible
-if(cible[2]==1):
-    print("Bleu doit aller sur la cibe")
-elif(cible[2]==2):
-    print("Jaune doit aller sur la cibe")
-elif(cible[2]==3):
-    print("Vert doit aller sur la cibe")
-elif(cible[2]==4):
-    print("Rouge doit aller sur la cibe")
+plateau = update_plateau(bleu,jaune,vert,rouge,plateau)
 
 init_game()
 fenetre.mainloop()
 
-
-#Creation de la solution de l'ia 
-result=iaSolution(plateau,bleu,jaune,vert,rouge)
-if(result!=0):
-    result=solutionList(result)
-    for line in result:
-            print (line)
-else:
-    print("aucun resultat trouvé")
