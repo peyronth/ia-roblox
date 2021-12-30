@@ -25,11 +25,15 @@ jaune = []
 vert = []
 rouge = []
 
-selected = []
-
 #Declaration de la cible
 #Liste comprenant deux coordonées de position et un chiffre déterminant la couleur du pion devant atteindre la cible
 cible = []
+
+#Declaration du pion sélectionné par l'utilisateur pour être déplacé
+selected = []
+
+#Déclaration de la liste corresspondant aux états successifs de la solution de l'IA
+result = []
 
 #Declaration de la fenetre contenant les boutons permettant de jouer et la représentation graphique du plateau
 #De type Fenetre
@@ -57,14 +61,18 @@ jaune_oval = None
 rouge_oval = None
 cible_carre = None
 
-#Declaration de la variable incrémentée à chaque déplacement d'un pion et du label mis à jour en conséquences
+#Déclaration du boutton permettant d'afficher la solution de l'IA sur l'interface graphique
+ia_button = None
+
+#Déclaration des labels indiquant le pion déplacé par l'IA et sa direction
+ia_pion_label = None
+ia_direction_label = None
+
+#Declaration de la variable incrémentée à chaque déplacement d'un pion par l'utilisateur et du label mis à jour en conséquence
 nombre_coups = 0
 coups_label = None
 
-result = []
-ia_button = None
-ia_pion_label = None
-ia_direction_label = None
+#Déclaration de la vatiable incrémentée à chaque déplacement d'un pion par l'IA et du numéro du pion déplacé
 nombre_coups_ia = 0
 num_pion_ia = 0
 
@@ -130,7 +138,7 @@ def init_plateau():
             elif(y==15):
                 mur_bas=1
         
-            #mise en place des cases bloquées au milieu du terrai
+            #mise en place des cases bloquées au milieu du terrain
             if((x==7 or x==8) and (y==7 or y==8)):
                 type=5
                 if(x==7):mur_gauche=1
@@ -178,14 +186,7 @@ def init_plateau():
                 idx+=1
                 if(idx==idx_cible):
                     cible=[y,x]
-    #Type des cases dont les coordonnées sont celles des pions correspond :
-    #1 : bleu
-    #2 : jaune etc.
-    """plateau[bleu[0]][bleu[1]][1] = 1
-    plateau[jaune[0]][jaune[1]][1] = 2
-    plateau[vert[0]][vert[1]][1] = 3
-    plateau[rouge[0]][rouge[1]][1] = 4
-    """
+    
     return plateau
 
 #Mise à jour du plateau lorsqu'un ou plusieurs pions ont été déplacés
@@ -796,7 +797,8 @@ def init_game():
     #Création et positionnement du cadre comprenant les boutons de choix de la direction
     direction_frame = LabelFrame(fenetre, text="Choix de la direction", width = 220, height = 230)
     direction_frame.place(x=520,y=270)
-
+    
+    #Création et positionnement du cadre permettant d'afficher la solution 
     solution_frame = LabelFrame(fenetre,text="Solution", width = 120, height = 180)
     solution_frame.place(x=750,y=80)
 
@@ -824,14 +826,16 @@ def init_game():
     #Création d'un bouton permettant de lancer l'affichage de la solution proposée par l'IA
     ia_button = Button(solution_frame, text ='Génération',width = 10, height = 3, command = lambda :display_solution(result))
 
-    #Création du label indiquant l'action réalisée par l'IA
+    #Création des labels indiquant l'action réalisée par l'IA :
+    #-Couleur du pion déplacé
+    #-Direction empruntée par le pion
     ia_pion_label = Label(solution_frame)
     ia_direction_label = Label(solution_frame)
 
     #Création du bouton permettant de quitter l'application
     quit_button = Button(fenetre, text ='Quitter', width = 10, height = 3, command = lambda :fenetre.destroy())
 
-    #Positionnement des boutons dans leur cadre respectif
+    #Positionnement des boutons dans leur cadre et fenêtre respectifs
     bleu_button.place(x=15, y=20)
     vert_button.place(x=115, y=20)
     jaune_button.place(x=15, y=90)
@@ -852,9 +856,9 @@ def init_game():
     displayGame()
 
 #******************************************************************************************************
-#Affichage de la solution de l'IA
+#Affichage de la solution de l'IA dans l'interfarce graphique
 
-#Renvoie une chaine de caractère correspondant à la couleur de chaque pion de la liste result
+#Renvoie une chaine de caractère correspondant à la couleur correspondant à chaque pion de chaque liste de la liste result
 def colorIndexPion(index):
     if(index==0):
         s = "Bleu"
@@ -866,10 +870,13 @@ def colorIndexPion(index):
         s = "Rouge"
     return s
 
+#Définit la couleur du pion se déplaçant dans la solution de l'IA
 def colorMovedPion(result, nombre_coups_ia):
     global num_pion_ia
     num_pion_ia = 0
+    #Parcours de la liste des 4 pions de l'état 'nombre_coups_ia' de la liste result 
     for pion in result[nombre_coups_ia]:
+        #Si les coordonnées du pion sont différentes des coordonnées du même pion dans l'état précédent alors ce pion s'est déplacé
         if (pion != result[nombre_coups_ia-1][num_pion_ia] and num_pion_ia < 4):
             selected = colorIndexPion(num_pion_ia)
         else:
@@ -877,7 +884,9 @@ def colorMovedPion(result, nombre_coups_ia):
 
     return selected
 
+#Définit la direction dans laquelle le pion correspondant au numéro num_pion_ia s'est déplacé
 def dirMovedPion(result, nombre_coups_ia):
+    #Le pion s'est déplacé vers le haut : sa première coordonnées a diminué par rapport à l'état précédents
     if(result[nombre_coups_ia][num_pion_ia][0] < result[nombre_coups_ia-1][num_pion_ia][0]):
         s = " ↑ "
     elif (result[nombre_coups_ia][num_pion_ia][0] > result[nombre_coups_ia-1][num_pion_ia][0]):
@@ -889,16 +898,20 @@ def dirMovedPion(result, nombre_coups_ia):
 
     return s
 
+#Fonction appelé à chaque click sur le boutton ia_button
+#Permet l'affichage de la solution proposée par l'IA contenue dans la liste result
 def display_solution(result):
     global nombre_coups_ia, ia_pion_label, ia_direction_label, ia_button, plateau
-    #afficher label nb coups
+    #L'utilisateur clique pour la première fois sur le boutton
     if(nombre_coups_ia==0):
         messagebox.showinfo("Solution", "L'IA a atteint la cible en " + str(len(result)-1) + " coups !")
         ia_button['text'] = 'Suivant'
+        #mise à jour du plateau avec les coordonnées des pions de la liste correspondant à l'état initial de la liste result 
         plateau = update_plateau(result[nombre_coups_ia][0],result[nombre_coups_ia][1],result[nombre_coups_ia][2],result[nombre_coups_ia][3],plateau)
         displayGame()
         disabledColorButtons()
         disabledDirectionButtons()
+    #L'utilisateur clique ensuite plusieurs fois jusqu'à la fin de la solution, de la liste result 
     elif(nombre_coups_ia < len(result)):
         ia_pion_label['text'] = "Pion : " +colorMovedPion(result,nombre_coups_ia)
         ia_direction_label['text'] = "Direction : " +dirMovedPion(result,nombre_coups_ia)
@@ -906,14 +919,17 @@ def display_solution(result):
         displayGame()
     
     nombre_coups_ia += 1
-
+    
+    #L'ensemble de la solution a été affichée
     if(nombre_coups_ia >= len(result)):
         ia_button['state'] = DISABLED
 
 #******************************************************************************************************
 
+#Génération des pions, du plateau, et de la solution tant qu'aucune solution n'a été trouvé
 condition1 = True
 while condition1 == True:
+
     #Initialisation des coordonnées des 4 pions
     #les 4 pions et la cible possèdent des coordonnées initiales différentes 
     condition2 = True
@@ -954,4 +970,3 @@ plateau = update_plateau(bleu,jaune,vert,rouge,plateau)
 
 init_game()
 fenetre.mainloop()
-
